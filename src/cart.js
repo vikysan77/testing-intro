@@ -1,12 +1,64 @@
-function notImplemented() {
-  throw new Error('Корзина ещё не реализована. Сначала прочитайте тесты.');
+function replaceCartItem(cart, index, item) {
+  const nextCart = cart.slice();
+  nextCart[index] = item;
+  return nextCart;
 }
+function addToCart(cart, product, quantity) {
+  const index = cart.findIndex((item) => item.id === product.id);
+  const nextQuantity = (index === -1 ? 0 : cart[index].quantity) + quantity;
 
-function addToCart() { return notImplemented(); }
-function changeQuantity() { return notImplemented(); }
-function removeFromCart() { return notImplemented(); }
-function calculateCartSubtotal() { return notImplemented(); }
-function calculateOrderTotal() { return notImplemented(); }
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new RangeError('Количество должно быть положительным целым числом');
+  }
+
+  if (nextQuantity > product.stock) {
+    throw new RangeError('Нельзя добавить больше товара, чем есть на складе');
+  }
+
+  if (index === -1) {
+    return [...cart, { ...product, quantity }];
+  }
+
+  return replaceCartItem
+  (cart, index, { ...cart[index], quantity: nextQuantity });
+}
+function changeQuantity(cart, productId, quantity) {
+  const index = cart.findIndex((item) => item.id === productId);
+  if (index === -1) return cart;
+
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new RangeError('Количество должно быть положительным целым числом');
+  }
+
+  const item = cart[index];
+  if (quantity > item.stock) {
+    throw new RangeError('Количество не может превышать остаток на складе');
+  }
+
+  if (item.quantity === quantity) return cart;
+
+  return replaceCartItem(cart, index, { ...item, quantity });
+}
+function removeFromCart(cart, productId) {
+  return cart.filter((item) => item.id !== productId);
+}
+function calculateCartSubtotal(cart) {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+function calculateOrderTotal(cart, promoCode) {
+  const subtotal = calculateCartSubtotal(cart);
+  const discount = promoCode === 'SAVE10' && subtotal >= 20000
+      ? Math.round(subtotal * 0.1)
+      : 0;
+  const delivery = subtotal < 50000 ? 30000 : 0;
+
+  return {
+    subtotal,
+    discount,
+    delivery,
+    total: subtotal - discount + delivery,
+  };
+}
 
 const cartApi = { addToCart, changeQuantity, removeFromCart, calculateCartSubtotal, calculateOrderTotal };
 
